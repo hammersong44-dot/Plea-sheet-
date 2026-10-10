@@ -47,7 +47,11 @@ iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;ba
 <div class="wrap">
   <h1>Plea Form Builder</h1>
   <p class="sub">7th Judicial District Court, Parish of Catahoula and Parish of Concordia. Plea of Guilty or Plea of Nolo Contendere, one 8.5 x 14 page.</p>
-  <div class="row" style="justify-content:flex-end;margin:0"><button type="button" class="sec clearBtn">Clear the form</button></div>
+  <div class="row" style="justify-content:space-between;margin:0">
+    <div class="row" style="gap:8px"><b style="align-self:center">Print a blank plea sheet:</b>
+      <button type="button" class="sec blankBtn" data-plea="guilty">Guilty</button>
+      <button type="button" class="sec blankBtn" data-plea="nolo contendere">Nolo Contendere</button></div>
+    <button type="button" class="sec clearBtn">Clear the form</button></div>
   <div class="banner">Everything you type stays in this browser window. Nothing is uploaded. Statute text and sentences must be checked against current law at <a href="https://legis.la.gov" target="_blank" rel="noopener">legis.la.gov</a> before the form is filed.</div>
 
   <div class="card">
@@ -65,11 +69,11 @@ iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;ba
       <label class="f">Defendant's name<input type="text" id="defendant" autocomplete="off"></label>
       <label class="f">Date of birth<input type="text" id="dob" placeholder="MM-DD-YYYY" autocomplete="off"></label>
       <div><label class="f">Can the defendant read and write?</label>
-        <div class="opts"><label><input autocomplete="off" type="radio" name="can_read" value="yes"> Yes</label><label><input autocomplete="off" type="radio" name="can_read" value="no"> No</label></div></div>
+        <div class="opts"><label><input autocomplete="off" type="radio" name="can_read" value="yes"> Yes</label><label><input autocomplete="off" type="radio" name="can_read" value="no"> No</label><label><input autocomplete="off" type="radio" name="can_read" value="blank"> Leave blank</label></div></div>
       <div><label class="f">Presently employed?</label>
-        <div class="opts"><label><input autocomplete="off" type="radio" name="employed" value="yes"> Employed</label><label><input autocomplete="off" type="radio" name="employed" value="no"> Not employed</label></div></div>
-      <label class="f">Years of high school<select id="hsSel" autocomplete="off"><option value="">Choose...</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></label>
-      <label class="f">Years of college<select id="colSel" autocomplete="off"><option value="">Choose...</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+        <div class="opts"><label><input autocomplete="off" type="radio" name="employed" value="yes"> Employed</label><label><input autocomplete="off" type="radio" name="employed" value="no"> Not employed</label><label><input autocomplete="off" type="radio" name="employed" value="blank"> Leave blank</label></div></div>
+      <label class="f">Years of high school<select id="hsSel" autocomplete="off"><option value="">Leave blank</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></label>
+      <label class="f">Years of college<select id="colSel" autocomplete="off"><option value="">Leave blank</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
       <label class="f">Date the offense was committed<input type="text" id="offense_date" placeholder="MM-DD-YYYY" autocomplete="off"></label>
       <div><label class="f">Number of jurors</label>
         <div class="opts"><label><input autocomplete="off" type="radio" name="jury" value="6"> 6</label><label><input autocomplete="off" type="radio" name="jury" value="12"> 12</label></div></div>
@@ -150,6 +154,11 @@ iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;ba
   const BLACK = rgb(0, 0, 0);
 
   function normalize(d) {
+    if (d.blank) {   // a completely blank form: only the plea wording is set
+      return { blank: true, plea: d.plea === "nolo contendere" ? "nolo contendere" : "guilty", parish: "", jury: "",
+        can_read: null, employed: null, docket: "", division: "", defendant: "", dob: "", hs_years: "",
+        college_years: "", crime: "", statute: "", offense_date: "", sentence: "", city: "", date: "" };
+    }
     d = Object.assign({}, d);
     if (!d.plea) d.plea = "guilty";
     if (!["guilty", "nolo contendere"].includes(d.plea)) throw new Error("plea must be guilty or nolo contendere");
@@ -320,7 +329,8 @@ iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;ba
       } else if (s[0] === "dd") {
         out.push({ kind: "dd", key: s[1], opts: s[2], w: s[3] * fs / 12 + 2, wid: s[3] * fs / 12 });
       } else if (s[0] === "v" || s[0] === "d") {
-        const key = s[1], minw = s[2];
+        const key = s[1];
+        const minw = d.blank ? ({ sentence: 400, crime: 240, defendant: 120 }[key] || s[2]) : s[2];
         const val = clean(valueOf(d, key));
         if (s[0] === "d" && val) {
           if ((key === "crime" || key === "sentence")) {
@@ -438,7 +448,7 @@ iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;ba
           dd.setFontSize(size);
         } else {
           text(val, x + 1.5, yy, size, e.key !== "jury");
-          if (e.key === "jury") line(x, yy - 1.5, x + e.wid, yy - 1.5, 0.5);
+          if (e.key === "jury" || !val) line(x, yy - 1.5, x + e.wid, yy - 1.5, 0.5);
         }
       } else if (k === "tf") {
         const tf = form.createTextField(e.key);
@@ -524,6 +534,7 @@ let urls=[];
 function resetAll(){
   document.querySelectorAll('input[type=text],textarea').forEach(e=>{e.value="";});
   document.querySelectorAll('input[type=radio]').forEach(e=>{e.checked=false;});
+  document.querySelectorAll('input[name=can_read][value=blank],input[name=employed][value=blank]').forEach(e=>{e.checked=true;});
   document.querySelectorAll('select').forEach(e=>{e.selectedIndex=0;});
   $("date").value=todayText();            // the signing date starts as today
   $("divisionOther").classList.add("hidden");
@@ -538,6 +549,23 @@ function resetAll(){
 }
 document.querySelectorAll('input[name="parish"]').forEach(r=>r.addEventListener("change",()=>{$("city").value=CITIES[radio("parish")];}));
 $("divisionSel").addEventListener("change",()=>{$("divisionOther").classList.toggle("hidden",$("divisionSel").value!=="other");});
+document.querySelectorAll(".blankBtn").forEach(b=>b.addEventListener("click",async()=>{
+  const msg=$("makeMsg"); msg.className=""; msg.textContent="Making a blank form ..."; $("dl").innerHTML="";
+  urls.forEach(u=>URL.revokeObjectURL(u)); urls=[];
+  try{
+    const plea=b.dataset.plea;
+    const r=await PleaGen.generate({blank:true, plea});
+    const u=URL.createObjectURL(new Blob([r.flat.bytes],{type:"application/pdf"})); urls.push(u);
+    const a=document.createElement("a"); a.href=u; a.download="PleaForm_Blank_"+(plea==="guilty"?"Guilty":"NoloContendere")+".pdf";
+    const dlb=document.createElement("button"); dlb.type="button"; dlb.textContent="Download the blank form (PDF)"; a.appendChild(dlb); $("dl").appendChild(a);
+    const pb=document.createElement("button"); pb.type="button"; pb.className="sec"; pb.textContent="Print it";
+    pb.addEventListener("click",()=>{ try{ $("frame").contentWindow.focus(); $("frame").contentWindow.print(); }catch(e){ window.open(u,"_blank"); } });
+    $("dl").appendChild(pb);
+    $("frame").src=u; $("preview").classList.remove("hidden");
+    msg.className="banner ok"; msg.textContent="Blank plea sheet ("+(plea==="guilty"?"Guilty":"Nolo Contendere")+"). Nothing is filled in. Use Print it, or the print icon in the preview below.";
+    $("preview").scrollIntoView({behavior:"smooth"});
+  }catch(e){ msg.className="banner"; msg.innerHTML='<span class="err">'+esc(e.message||String(e))+"</span>"; }
+}));
 document.querySelectorAll(".clearBtn").forEach(b=>b.addEventListener("click",()=>{ if(confirm("Clear everything on this form and start over?")){ resetAll(); window.scrollTo(0,0); } }));
 
 /* ---------- crime-name search (built-in index of Titles 14, 32, 40) ---------- */
