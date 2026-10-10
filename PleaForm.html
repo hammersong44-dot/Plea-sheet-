@@ -119,7 +119,8 @@ iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;ba
     <button id="makeBtn" type="button">Make the plea form</button>
     <button type="button" class="sec clearBtn" style="margin-left:8px">Clear the form</button>
     <div id="makeMsg" style="margin-top:10px"></div>
-    <div id="dl" class="row" style="margin-top:10px"></div>
+        <div id="dl" class="row" style="margin-top:10px"></div>
+    <div id="shareNote" class="small" style="margin-top:6px"></div>
     <div id="preview" class="hidden" style="margin-top:14px"><iframe id="frame" title="Plea form preview"></iframe></div>
   </div>
 </div>
@@ -542,15 +543,29 @@ function resetAll(){
   $("statBox").classList.add("hidden"); $("statText").classList.add("hidden"); $("statText").innerHTML="";
   $("pasteBox").classList.add("hidden"); $("amend").textContent=""; $("statTitle").textContent=""; $("statLink").textContent="";
   $("changeNote").classList.add("hidden"); $("changeNote").textContent="";
-  $("makeMsg").textContent=""; $("makeMsg").className=""; $("dl").innerHTML="";
+  $("makeMsg").textContent=""; $("makeMsg").className=""; $("dl").innerHTML=""; $("shareNote").textContent="";
   $("preview").classList.add("hidden"); $("frame").removeAttribute("src");
   urls.forEach(u=>URL.revokeObjectURL(u)); urls=[];
   cur=null; searchedFor="";
 }
 document.querySelectorAll('input[name="parish"]').forEach(r=>r.addEventListener("change",()=>{$("city").value=CITIES[radio("parish")];}));
 $("divisionSel").addEventListener("change",()=>{$("divisionOther").classList.toggle("hidden",$("divisionSel").value!=="other");});
+function addShare(bytes,filename,title){
+  const sb=document.createElement("button"); sb.type="button"; sb.className="sec"; sb.textContent="Share / email it";
+  sb.addEventListener("click",async()=>{
+    const note=$("shareNote"); note.textContent="";
+    const file=new File([bytes],filename,{type:"application/pdf"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title:title}); }
+      catch(e){ if(e && e.name!=="AbortError") note.textContent="The share menu could not be opened ("+(e.message||e)+"). Use the download button and attach the PDF to an email."; }
+    }else{
+      note.textContent="This browser cannot open the share menu. Use the download button, then attach the PDF to an email.";
+    }
+  });
+  $("dl").appendChild(sb);
+}
 document.querySelectorAll(".blankBtn").forEach(b=>b.addEventListener("click",async()=>{
-  const msg=$("makeMsg"); msg.className=""; msg.textContent="Making a blank form ..."; $("dl").innerHTML="";
+  const msg=$("makeMsg"); msg.className=""; msg.textContent="Making a blank form ..."; $("dl").innerHTML=""; $("shareNote").textContent="";
   urls.forEach(u=>URL.revokeObjectURL(u)); urls=[];
   try{
     const plea=b.dataset.plea;
@@ -561,6 +576,7 @@ document.querySelectorAll(".blankBtn").forEach(b=>b.addEventListener("click",asy
     const pb=document.createElement("button"); pb.type="button"; pb.className="sec"; pb.textContent="Print it";
     pb.addEventListener("click",()=>{ try{ $("frame").contentWindow.focus(); $("frame").contentWindow.print(); }catch(e){ window.open(u,"_blank"); } });
     $("dl").appendChild(pb);
+    addShare(r.flat.bytes,a.download,"Blank plea sheet");
     $("frame").src=u; $("preview").classList.remove("hidden");
     msg.className="banner ok"; msg.textContent="Blank plea sheet ("+(plea==="guilty"?"Guilty":"Nolo Contendere")+"). Nothing is filled in. Use Print it, or the print icon in the preview below.";
     $("preview").scrollIntoView({behavior:"smooth"});
@@ -695,7 +711,7 @@ function fileBase(d){
   return t.getFullYear()+"-"+p(t.getMonth()+1)+"-"+p(t.getDate())+"_"+last+"_PleaForm_v1";
 }
 $("makeBtn").addEventListener("click", async ()=>{
-  const msg=$("makeMsg"); msg.className=""; msg.textContent="Working ..."; $("dl").innerHTML=""; $("preview").classList.add("hidden");
+  const msg=$("makeMsg"); msg.className=""; msg.textContent="Working ..."; $("dl").innerHTML=""; $("shareNote").textContent=""; $("preview").classList.add("hidden");
   urls.forEach(u=>URL.revokeObjectURL(u)); urls=[];
   try{
     const d=gather();
@@ -709,6 +725,7 @@ $("makeBtn").addEventListener("click", async ()=>{
       const b=document.createElement("button"); b.type="button"; b.textContent=label; a.appendChild(b); $("dl").appendChild(a); return u;
     };
     const flatUrl=mk(r.flat.bytes,"","Download the plea form (PDF)");
+    addShare(r.flat.bytes,base+".pdf","Plea of "+(d.plea==="guilty"?"Guilty":"Nolo Contendere"));
     $("frame").src=flatUrl; $("preview").classList.remove("hidden");
     const missing=[]; if(!d.docket)missing.push("docket number"); if(!d.defendant)missing.push("defendant's name"); if(!d.statute)missing.push("statute cite"); if(!d.sentence)missing.push("sentence"); if(!d.crime)missing.push("crime");
     const stale = cur && d.crime!==searchedFor;
