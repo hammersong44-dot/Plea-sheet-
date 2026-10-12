@@ -161,6 +161,7 @@ iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;ba
   for (let i = 0; i <= 16; i++) SIZES.push(Math.round((13 - 0.25 * i) * 100) / 100);
   const PARISHES = ["Catahoula", "Concordia"];
   const BLACK = rgb(0, 0, 0);
+  const CONSEQ = {"title": ["7TH DISTRICT PUBLIC DEFENDER'S OFFICE", "POSSIBLE CONSEQUENCES OF A PLEA OF GUILTY OR NOLO CONTENDERE", "(NO CONTEST) TO A FELONY OR ENHANCEABLE MISDEMEANOR", "Article 556.1 COMPLIANCE"], "intro": "I, {name}, have been advised that a plea of Guilty or Nolo Contendere (No Contest), which has the same effect as a plea of Guilty without admitting guilt, may cost me certain Federal and State rights, temporarily or permanently, as a direct result of the plea. These include, but are not limited to:", "items": [["Remaining in the United States.", "If I am not a natural born or naturalized citizen of the United States, I can be deported to my country of origin or another place designated by the Federal Government, even though the charges are State charges."], ["Voting.", "I may lose my right to vote in local, State, and Federal elections, temporarily or permanently."], ["Firearms.", "I may lose my right to own, possess, or bear firearms of any type, including for hunting, sport, and employment (including law enforcement and service in the U.S. Armed Forces)."], ["Due process.", "My rights to privacy and to be free from warrantless searches may be limited. For example, a Probation/Parole Officer may search or seize me without a warrant while I am on probation or parole. I may also be detained."], ["Equal protection.", "My right to work, live, and recreate where I choose, free of government interference, may be limited. For example, if I am convicted of a sex offense or a domestic violence crime, or am under a protective order or other court order, I may face restrictions on housing and employment near schools, daycares, playgrounds, churches, or other places where children are present, and on housing, employment, or mere presence near domestic crime victims, sex offense victims, and persons protected by court orders, regardless of age or relationship. My access to and use of social media may be restricted or prohibited."], ["College and financial aid.", "I may lose college admission and access to Federal and State financial aid and assistance programs, temporarily or permanently."], ["Housing assistance.", "I may lose access to Federal and State housing assistance programs, temporarily or permanently."], ["Employment and licenses.", "I may lose rights to employment, including the right to practice professions that require a State or Federal license, temporarily or permanently."], ["Public benefits.", "I may lose Federal and State public benefits, including unemployment insurance, Social Security, SSI, Medicaid, Medicare, Food Stamps, WIC, TANF, SNAP, EBT, and other governmental assistance programs, temporarily or permanently."], ["Sex offense registration.", "If I am convicted of a sex offense, I may be required to register, and my crime, conviction, address, photograph, and other personal information may be published and given to the community. I may also be limited in where I may work, live, visit, or be present. The requirement may last 15 years, 25 years, or for life, as set by statute for the crime."], ["Hunting, fishing, and driving.", "I may lose my right to hunt, fish, or drive, or to obtain or keep a license for any of them, temporarily or permanently."], ["Enhanced penalties.", "If I am convicted of an enhanceable crime, such as theft, DWI, or domestic abuse, the penalty may increase with the number of times I have been convicted of that crime. A misdemeanor can become a felony after two or more convictions. In theft cases, the values of separate thefts can be added together (aggregated) to raise a misdemeanor theft to a felony theft with a felony penalty."], ["Habitual offender.", "On a second or subsequent conviction, the State can charge me as a habitual offender. My exposure may then include mandatory minimum and maximum sentences, no parole eligibility, and a sentence up to life. If the State does not charge me now, it does not lose the right to do so if I am convicted of another crime. The State can charge me after I am convicted of this charge or of another Louisiana felony in the future, and can count a conviction from before this charge anywhere in the United States, a foreign country, or the Military if the cleansing period has not expired. The nature of the charge determines the cleansing period and the penalty."], ["Protective orders.", "If a protective order or other court order is in effect, contact with the protected person or persons by any means is a separate crime, may be contempt of court, and is grounds to revoke bond, probation, or parole. My right to own, possess, use, carry, or be near a firearm may be limited under State and Federal law for the period of probation, parole, or the protective order, or permanently."], ["Revoking probation or parole.", "If I am on probation or parole, revocation requires only a preponderance of the evidence, not proof beyond a reasonable doubt. The full constitutional protections of a criminal trial do not apply. Hearsay is admissible, and facts sufficient to reasonably satisfy the judge that I did not follow the conditions of probation are enough to revoke it."]], "closing": "I UNDERSTAND THAT ALL EXAMPLES LISTED ABOVE ARE ILLUSTRATIONS ONLY AND ARE NOT EXCLUSIVE. OTHER CONSEQUENCES MAY OCCUR.", "sig": ["SIGNATURE", "PRINTED NAME", "DATE"]};   // Article 556.1 consequence sheet text, from consequence.json
 
   // ---- jury from the offense level (La. C.Cr.P. arts. 779, 782(A); La. Const. art. I, sec. 17(A)) ----
   const LEVELS = ["misdemeanor_no_jury", "misdemeanor_jury", "felony_may_hard_labor", "felony_hard_labor", "capital"];
@@ -450,6 +451,107 @@ iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;ba
       " pt. Shorten the crime or sentence wording.");
   }
 
+  // ---- page 2: possible consequences of a plea (La. C.Cr.P. art. 556.1) ----
+  function drawConsequence(doc, d, reg, bold) {
+    const fw = makeMeasure({ reg, bold });
+    const M2 = 54, AVAIL_W = PAGE_W - 2 * M2, AVAIL_H = PAGE_H - 2 * M2, SPACE = (fs) => fw(" ", false, fs);
+    const name = clean(d.defendant || ""), dateText = clean(d.date || "");
+
+    // break a list of atoms {text,bold,w,underline?} into lines no wider than width
+    function breakLines(atoms, width, fs) {
+      const sp = SPACE(fs), lines = []; let cur = [], w = 0;
+      for (const a of atoms) {
+        const add = (cur.length ? sp : 0) + a.w;
+        if (cur.length && w + add > width + 0.01) { lines.push(cur); cur = []; w = 0; }
+        w += (cur.length ? sp : 0) + a.w; cur.push(a);
+      }
+      if (cur.length) lines.push(cur);
+      return lines;
+    }
+    const words = (text, boldFlag, fs) => text.split(" ").filter(Boolean).map(t => ({ text: t, bold: boldFlag, w: fw(t, boldFlag, fs) }));
+
+    function plan(fs) {
+      const lead = fs * 1.18, after = fs * 0.42, blocks = []; let h = 0;
+      // heading
+      h += fs * 1.12 * 1.3 + (CONSEQ.title.length - 1) * fs * 1.2 + fs * 0.8;
+      // intro
+      const [a, b] = CONSEQ.intro.split("{name}");
+      // the comma that follows the name travels with it, so it never floats on its own
+      const nameAtom = name ? { text: name, bold: false, underline: true, tail: ",", w: fw(name, false, fs) + 2.5 + fw(",", false, fs) }
+                            : { text: "", bold: false, blank: true, tail: ",", w: fs * 17 + fw(",", false, fs) };
+      const introLines = breakLines([...words(a, false, fs), nameAtom, ...words(b.replace(/^\s*,\s*/, ""), false, fs)], AVAIL_W, fs);
+      blocks.push({ kind: "intro", lines: introLines, x: M2, width: AVAIL_W }); h += introLines.length * lead + after;
+      // items
+      const indent = fs * 2.0;
+      CONSEQ.items.forEach(([lead_in, text], i) => {
+        const lines = breakLines([...words(lead_in, true, fs), ...words(text, false, fs)], AVAIL_W - indent, fs);
+        blocks.push({ kind: "item", n: i + 1, lines, x: M2 + indent, width: AVAIL_W - indent, bx: M2 }); h += lines.length * lead + after;
+      });
+      const closeLines = breakLines(words(CONSEQ.closing, true, fs), AVAIL_W, fs);
+      blocks.push({ kind: "close", lines: closeLines, x: M2, width: AVAIL_W }); h += fs * 0.2 + closeLines.length * lead + fs * 0.2;
+      h += fs * 2.2 + fs * 0.4 + fs * 1.3 + 2;   // signature block
+      return { fs, lead, after, blocks, h };
+    }
+    let pl = null;
+    for (let fs = 12; fs >= 8.5; fs -= 0.25) { const p = plan(fs); if (p.h <= AVAIL_H) { pl = p; break; } }
+    if (!pl) throw new Error("The consequence sheet does not fit on one page.");
+    const { fs, lead, after } = pl;
+
+    const page = doc.addPage([PAGE_W, PAGE_H]);
+    const text = (t, x, yy, size, b) => { if (t) page.drawText(t, { x, y: yy, size, font: b ? bold : reg, color: BLACK }); };
+    const line = (x1, y1, x2, y2, w) => page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: w, color: BLACK });
+    let y = PAGE_H - M2 - fs;
+    // heading, centered
+    CONSEQ.title.forEach((t, i) => {
+      const size = i === 0 ? fs * 1.12 : fs, b = i === 0;
+      text(t, (PAGE_W - fw(t, b, size)) / 2, y, size, b);
+      y -= i === 0 ? fs * 1.3 : fs * 1.2;
+    });
+    y -= fs * 0.8 - (fs * 1.2 - fs);
+    y += 0;
+    function drawLines(blk, justify) {
+      blk.lines.forEach((ln, li) => {
+        const sp0 = SPACE(fs), wordsW = ln.reduce((a, x) => a + x.w, 0);
+        const isLast = li === blk.lines.length - 1;
+        const gap = (justify && !isLast && ln.length > 1) ? (blk.width - wordsW) / (ln.length - 1) : sp0;
+        let x = blk.x;
+        for (const a of ln) {
+          const tw = a.tail ? fw(a.tail, false, fs) : 0;
+          if (a.blank) line(x, y - 1.5, x + a.w - tw, y - 1.5, 0.6);
+          else {
+            text(a.text, a.underline ? x + 1.5 : x, y, fs, a.bold);
+            if (a.underline) line(x, y - 1.5, x + a.w - tw, y - 1.5, 0.5);
+          }
+          if (a.tail) text(a.tail, x + a.w - tw, y, fs, false);
+          x += a.w + gap;
+        }
+        y -= lead;
+      });
+    }
+    for (const blk of pl.blocks) {
+      if (blk.kind === "close") y -= fs * 0.2;
+      if (blk.kind === "item") text(blk.n + ".", blk.bx, y, fs, false);
+      drawLines(blk, blk.kind !== "close");
+      y -= blk.kind === "close" ? fs * 0.2 : after;
+    }
+    // signature block: signature (extended), printed name (from the plea form), date (from the plea form)
+    y -= fs * 2.2;
+    const gapW = 18, usable = AVAIL_W - 2 * gapW;
+    const cols = [usable * 0.47, usable * 0.27, usable * 0.26];
+    const fitSize = (t, maxW, size) => { let s2 = size; while (s2 > 7 && fw(t, false, s2) > maxW - 4) s2 -= 0.25; return s2; };
+    let x = M2;
+    const vals = [ "", name, dateText ];
+    cols.forEach((cw, i) => {
+      line(x, y, x + cw, y, 0.8);
+      if (vals[i]) { const s2 = fitSize(vals[i], cw, fs); text(vals[i], x + 2, y + 3, s2, false); }
+      text(CONSEQ.sig[i], x, y - fs * 1.0, fs * 0.95, false);
+      x += cw + gapW;
+    });
+    y -= fs * 1.0;
+    if (y < M2 - 4) throw new Error("The consequence sheet runs past the bottom margin.");
+    return fs;
+  }
+
   async function render(d, fillable) {
     const doc = await PDFDocument.create();
     const reg = await doc.embedFont(StandardFonts.TimesRoman);
@@ -547,14 +649,16 @@ iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;ba
     }
     if (y < MARGIN - 2) throw new Error("Content passes the bottom margin (y=" + y.toFixed(1) + ").");
     if (fillable) form.updateFieldAppearances(reg);
+    let csFs = null;
+    if (!fillable) csFs = drawConsequence(doc, d, reg, bold);   // page 2
     const bytes = await doc.save();
-    return { bytes, fs, y, pages: doc.getPageCount() };
+    return { bytes, fs, y, pages: doc.getPageCount(), csFs };
   }
 
   async function generate(input) {
     const d = normalize(input);
     const flat = await render(d, false);
-    if (flat.pages !== 1) throw new Error("The form is not exactly one page.");
+    if (flat.pages !== 2) throw new Error("The plea form and consequence sheet should be exactly two pages.");
     return { flat, data: d };
   }
 
@@ -825,7 +929,7 @@ $("makeBtn").addEventListener("click", async ()=>{
     const missing=[]; if(!d.docket)missing.push("docket number"); if(!d.defendant)missing.push("defendant's name"); if(!d.statute)missing.push("statute cite"); if(!d.sentence)missing.push("sentence"); if(!d.crime)missing.push("crime");
     const stale = cur && d.crime!==searchedFor;
     msg.className="banner ok";
-    msg.innerHTML="<b>One page confirmed</b> ("+r.flat.fs+" pt type). Plea: "+esc(d.plea)+", "+esc(d.parish)+" Parish. "+esc($("juryNote").textContent.replace(/ \(Set from.*$/,""))
+    msg.innerHTML="<b>Two pages made</b>: the plea form (one page, "+r.flat.fs+" pt type) and the consequence sheet (page 2). Plea: "+esc(d.plea)+", "+esc(d.parish)+" Parish. "+esc($("juryNote").textContent.replace(/ \(Set from.*$/,""))
       +(stale?'<br><span class="err">The crime name was changed after the statute was chosen. Confirm that the statute cite and sentence match this crime.</span>':"")
       +(missing.length?'<br><span class="err">Left blank: '+missing.join(", ")+".</span>":"")
       +"<br>Defendant, attorney, and judge signature lines are left blank. Verify the statute and sentence against legis.la.gov before filing.";
