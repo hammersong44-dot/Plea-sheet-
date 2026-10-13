@@ -864,7 +864,9 @@ async function openStatute(cite,name,d){
       const relay = RELAY_URL.replace(/\/$/,"");
       const r=await fetch(relay+(relay.includes("?")?"&":"?")+"u="+encodeURIComponent(url), {headers:{Accept:"text/html"}});
       if(!r.ok) throw new Error("HTTP "+r.status);
-      showStatute(htmlToText(await r.text()), true);
+      const imported=htmlToText(await r.text());
+      if(!isExpectedStatute(imported,cite)) throw new Error("The relay did not return the requested statute");
+      showStatute(imported, true);
       return;
     }catch(e){
       $("statText").textContent="Automatic import failed. Use the official source link and paste the page below.";
@@ -880,7 +882,14 @@ function htmlToText(h){
   doc.querySelectorAll("script,style").forEach(n=>n.remove());
   return doc.body.innerText||doc.body.textContent||"";
 }
+function isExpectedStatute(text,cite){
+  if(!text || /Plea Form Builder|Find the statute|Make the plea form/i.test(text)) return false;
+  const section=cite.split(":")[1].replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  return new RegExp("§\\s*"+section+"(?:\\.|\\b)").test(text)
+    || new RegExp("(?:R\\.?S\\.?|RS)\\s*"+cite.replace(":","\\s*:\\s*"),"i").test(text);
+}
 function showStatute(raw, autoUse){
+  if(cur && !isExpectedStatute(raw,cur.cite)) throw new Error("The pasted text is not the selected Louisiana statute.");
   let t=raw.replace(/\r/g,"");
   const s=t.indexOf("§"+(cur?cur.cite.split(":")[1]:"")+"."); const s2=s>=0?s:t.indexOf("§");
   if(s2>=0) t=t.slice(s2);
