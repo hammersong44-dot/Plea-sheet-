@@ -738,7 +738,25 @@ document.querySelectorAll(".clearBtn").forEach(b=>b.addEventListener("click",()=
 /* ---------- crime-name search (built-in index of Titles 14, 32, 40) ---------- */
 const SYN = {dwi:"operating while impaired", dui:"operating while impaired", driving:"operating", weed:"marijuana", pot:"marijuana"};
 const STOP = new Set(["of","the","a","an","to","or","and"]);
+const CDS_CITES = ["40:966","40:967","40:968","40:969","40:970"];
+function cdsSearch(q){
+  const low = q.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+  const asksForPossession = /\b(possession|possess|possessing)\b/.test(low);
+  const namesCDS = /\b(cds|cbds|cbd)\b/.test(low) || /\bcontrolled (dangerous )?substances?\b/.test(low);
+  const scheduleII = /\b(meth|methamphetamine|cocaine|crack)\b/.test(low);
+  const scheduleI = /\b(marijuana|weed|pot|heroin|synthetic cannabinoid)\b/.test(low);
+  if(!asksForPossession || (!namesCDS && !scheduleII && !scheduleI)) return null;
+  const order = scheduleII
+    ? ["40:967","40:966","40:968","40:969","40:970"]
+    : CDS_CITES;
+  return order.map((cite,i)=>{
+    const hit = INDEX.find(row=>row[0]===cite);
+    return hit ? [i,0,hit[1].length,hit[0],hit[1],hit[2]] : null;
+  }).filter(Boolean);
+}
 function search(q){
+  const cdsHits = cdsSearch(q);
+  if(cdsHits) return cdsHits;
   const qq = q.toLowerCase().split(/\s+/).map(w=>SYN[w]||w).join(" ");
   const words = (qq.match(/[a-z0-9]+/g)||[]).filter(w=>!STOP.has(w));
   if(!words.length) return [];
