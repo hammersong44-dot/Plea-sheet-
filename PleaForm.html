@@ -6,12 +6,33 @@
 <meta name="plea-statute-relay" content="https://seventh-jdc-plea-form.hammersong44.chatgpt.site/api/statute">
 <title>Plea Form Builder</title>
 <style>
-:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1b;--mute:#6a6a66;--line:#d9d6cf;--accent:#1f4e79;--accent-ink:#fff;--warn-bg:#fff4d6;--warn-line:#e0b84a;--ok-bg:#e6f3ea;--ok-line:#7fb88f;--hl:#fff1a8}
-@media (prefers-color-scheme:dark){:root{--bg:#161615;--card:#212120;--ink:#ecebe7;--mute:#a3a29c;--line:#3a3a37;--accent:#7db1e0;--accent-ink:#10202f;--warn-bg:#3a3318;--warn-line:#8a7424;--ok-bg:#1d3326;--ok-line:#3f7a52;--hl:#5a4d10}}
+/* Office brand (Law Office of Paul A. Lemke III). All colors live here so a change is one edit.
+   Night #0A1020, Deep Navy #002047, Brass #B08D57 (shapes/large type), Dark Brass #7A5C2E (text on light),
+   Slate Gray #8A93A8, Parchment #F4F1EA. Brass is provisional until matched to the website. */
+:root{--bg:#f4f1ea;--card:#fff;--ink:#1d1d1b;--mute:#5d6170;--line:#d9d3c5;--accent:#002047;--accent-ink:#fff;--warn-bg:#fff4d6;--warn-line:#e0b84a;--ok-bg:#e6f3ea;--ok-line:#7fb88f;--hl:#fff1a8;
+ --navy:#002047;--night:#0a1020;--brass:#b08d57;--brass-dark:#7a5c2e;--slate:#8a93a8;--head-ink:#f4f1ea;
+ --serif:"Source Serif 4","Source Serif Pro",Georgia,"Times New Roman",serif;
+ --sans:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+ --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#0a1020;--card:#101a30;--ink:#ecebe7;--mute:#a9b0c2;--line:#26324d;--accent:#b08d57;--accent-ink:#0a1020;--warn-bg:#3a3318;--warn-line:#8a7424;--ok-bg:#1d3326;--ok-line:#3f7a52;--hl:#5a4d10;--navy:#001633;--brass-dark:#c9a56b}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-.wrap{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--sans)}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 40px}
+/* Letterhead-style header: navy band, logo, name, 2px brass rule underneath */
+.brandbar{background:var(--navy);border-bottom:2px solid var(--brass);color:var(--head-ink)}
+.brandin{max-width:860px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:14px}
+.brandlogo{width:52px;height:52px;flex:none}
+.brandname{font-family:var(--serif);font-weight:600;font-size:1.35rem;line-height:1.15;margin:0}
+.brandsub{font-family:var(--mono);text-transform:uppercase;letter-spacing:.16em;font-size:.7rem;color:var(--brass);margin-top:4px}
+.brandtool{margin-left:auto;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;color:var(--slate);text-align:right}
+@media (max-width:640px){.brandtool{display:none}.brandname{font-size:1.1rem}}
+.foot{max-width:860px;margin:0 auto;padding:14px 16px 40px;border-top:2px solid var(--brass);text-align:center;font-size:.8rem;color:var(--mute)}
+.foot b{font-family:var(--serif);font-weight:600;color:var(--ink)}
+h1,h2,h3{font-family:var(--serif)}
 h1{font-size:1.5rem;margin:.2rem 0 .1rem}
+.card h2{color:var(--brass-dark)}
+.card{border-top:3px solid var(--navy)}
+@media (prefers-color-scheme:dark){.card{border-top-color:var(--brass)}}
 .sub{color:var(--mute);margin:0 0 14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:14px 0}
 .card h2{font-size:1.1rem;margin:0 0 10px}
@@ -42,9 +63,19 @@ a{color:var(--accent)}
 iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;background:#fff}
 .hidden{display:none}
 .err{color:#b3261e;font-weight:600}
+/* Printing this page (not the plea PDF): plain white, black ink, no brand colors. */
+@media print{body{background:#fff;color:#000}.brandbar{background:#fff;color:#000;border-bottom:1px solid #000}.brandsub,.brandtool{color:#000}.card{border:1px solid #000;border-top:1px solid #000}.card h2{color:#000}.foot{border-top:1px solid #000;color:#000}}
 </style>
 </head>
 <body>
+<header class="brandbar">
+  <div class="brandin">
+    <!-- Office logo: paths copied unchanged from office-brand-package/logo-office.svg, drawn in Brass on the navy band. -->
+    <svg class="brandlogo" viewBox="-4 -4 120 120" fill="none" stroke="#b08d57" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Law Office of Paul A. Lemke III logo"><path d="M56 5 100 30v52L56 107 12 82V30z"/><path d="M56 26v50M42 82h28M32 38h48"/><circle cx="56" cy="26" r="4"/><path d="M32 38 24 60h16zM80 38 72 60h16z"/><path d="M24 60a8 8 0 0 0 16 0M72 60a8 8 0 0 0 16 0"/><circle cx="32" cy="38" r="3" fill="#b08d57"/><circle cx="80" cy="38" r="3" fill="#b08d57"/><path d="M56 70H44l-6 6M56 70h12l6 6"/><circle cx="38" cy="76" r="2.6" fill="#b08d57"/><circle cx="74" cy="76" r="2.6" fill="#b08d57"/><path d="M12 56H2M100 56h10M56 5V0M56 107v5"/></svg>
+    <div><div class="brandname">Law Office of Paul A. Lemke III</div><div class="brandsub">Attorney at Law</div></div>
+    <div class="brandtool">Plea Form Builder<br>7th JDC</div>
+  </div>
+</header>
 <div class="wrap">
   <h1>Plea Form Builder</h1>
   <p class="sub">7th Judicial District Court, Parish of Catahoula and Parish of Concordia. Plea of Guilty or Plea of Nolo Contendere, one 8.5 x 14 page.</p>
@@ -133,6 +164,7 @@ iframe{width:100%;height:760px;border:1px solid var(--line);border-radius:8px;ba
     <div id="preview" class="hidden" style="margin-top:14px"><iframe id="frame" title="Plea form preview"></iframe></div>
   </div>
 </div>
+<footer class="foot"><b>Law Office of Paul A. Lemke III</b> &middot; Attorney at Law<br>P.O. Box 595, Harrisonburg, LA 71340 &middot; 318-200-0641 &middot; cialegalservices.com</footer>
 
 <script>!function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"function"==typeof define&&define.amd?define(["exports"],e):e((t=t||self).PDFLib={})}(this,(function(t){"use strict";
 /*! *****************************************************************************
